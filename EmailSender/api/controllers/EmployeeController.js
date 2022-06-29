@@ -85,10 +85,10 @@ module.exports = {
         `SELECT * FROM email where createdAt between ${start_date} and ${end_date} and id=${id}`
       );
 
-      const jsonData = JSON.parse(JSON.stringify(query));
-
+      //fields for sentemail data
       const fields1 = ["id", "from", "to", "createdAt", "updatedAt"];
       const newLine = "\r\n";
+      //fileds for employeedetails data
       const fields2 = ["id", "EmployeeDetails"];
 
       let empStr = `
@@ -99,34 +99,45 @@ module.exports = {
 
       let emparr = [{ id: Employeedetails.id, EmployeeDetails: empStr }];
 
+      //for employeedetails data
       const json2csvParser = new Json2csvParser({
         fields: fields2,
       });
-      console.log(jsonData.rows);
 
       const csv = json2csvParser.parse(emparr) + newLine;
 
+      //writing data of employee details
       fs.writeFile("Email-Details.csv", csv, function (error) {
         if (error) throw error;
 
         console.log("Write to Email-Details.csv successfully!");
       });
 
+      //for sent email details
+      const jsonData = JSON.parse(JSON.stringify(query));
       const json2csvParsertwo = new Json2csvParser({
         fields: fields1,
       });
       const csv1 = json2csvParsertwo.parse(jsonData.rows);
 
-      fields = csv1 + newLine;
+      fields = newLine + csv1;
 
-      const final = fs.appendFile("Email-Details.csv", fields, function (err) {
+      //appending sent email data
+      fs.appendFile("Email-Details.csv", fields, function (err, data) {
         if (err) throw err;
+
         console.log("file saved");
       });
-      console.log(final);
 
-      res.attachment("Email-Details.csv").send(final);
+      //reading data for employeedetails + sentemaildetails
+      fs.readFile("Email-Details.csv", function (err, data) {
+        if (err) throw err;
+        data = data.toString();
+        console.log(data, "hiiih doneee");
+        res.attachment("Email-Details.csv").send(data);
+      });
     } catch (error) {
+      console.log(error);
       return res.status(500).json({
         status: 500,
         data: "",
@@ -138,7 +149,7 @@ module.exports = {
   CreateReportforMultipleEmployee: async (req, res) => {
     try {
       const Employeedetails = await Employee.find();
-      console.log(Employeedetails);
+      //console.log(Employeedetails);
 
       const findData = await Email.find();
 
@@ -164,20 +175,62 @@ module.exports = {
         `SELECT * FROM email where createdAt between ${start_date} and ${end_date}  `
       );
 
-      const jsonData = JSON.parse(JSON.stringify(query));
-      const json2csvParser = new Json2csvParser({ header: true });
-      const csv = json2csvParser.parse(jsonData);
-      fs.writeFile("Email-Details.csv", csv, function (error) {
-        if (error) throw error;
-        console.log("Write to Email-Details.csv successfully!");
+      //fileds of sent email data
+      const fields1 = ["id", "from", "to", "createdAt", "updatedAt"];
+      const newLine = "\r\n";
+
+      //fields of Employeedetails
+      const fields2 = ["id", "EmployeeDetails"];
+
+      const json2csvParser = new Json2csvParser({
+        fields: fields2,
+      });
+      //creating new file
+      fs.open("Email-Details.csv", "w+", function (err) {
+        if (err) {
+          return console.error(err);
+        }
       });
 
-      const resData = jsonData.rows;
-      console.log(resData);
-      return res.send({
-        data: { Employeedetails, resData },
+      //for appending Employeedata
+      for (let data of Employeedetails) {
+        let empStr = `
+        email: ${data.email},
+        fname: ${data.fname},
+        lname: ${data.lname},
+        designation: ${data.designation},`;
+        let emparr = [{ id: data.id, EmployeeDetails: empStr }];
+        const csv = json2csvParser.parse(emparr) + newLine;
+
+        fs.appendFile("Email-Details.csv", csv, function (error) {
+          if (error) throw error;
+        });
+      }
+
+      //for sentEMail data
+      const jsonData = JSON.parse(JSON.stringify(query));
+
+      const json2csvParsertwo = new Json2csvParser({
+        fields: fields1,
+      });
+      const CSVdata = json2csvParsertwo.parse(jsonData.rows) + newLine;
+      Newdata = newLine + CSVdata;
+
+      //appending sent email data
+      fs.appendFile("Email-Details.csv", Newdata, function (err) {
+        if (err) throw err;
+
+        console.log("file saved for second data");
+      });
+
+      //reading file for employee details + EmailsentDetails
+      fs.readFile("Email-Details.csv", function (err, fileData) {
+        if (err) throw err;
+        fileData = fileData.toString();
+        res.attachment("Email-Details.csv").send(fileData);
       });
     } catch (error) {
+      console.log(error);
       return res.status(500).json({
         status: 500,
         data: "",

@@ -14,6 +14,6 @@ module.exports.routes = {
   "GET /EmployeeReport": "EmployeeController.CreateReportforEmployee",
   //"GET /Exportfile": "EmployeeController.Downloadcsv",
   "GET /MultipleEmployeeReport": "EmployeeController.CreateReportforMultipleEmployee",
-  "GET /testcsv": "EmployeeController.testcsv",
+ 
 };
 
